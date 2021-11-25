@@ -64,6 +64,7 @@ namespace sc {
     auto   last   = raw.begin();
     int    cnt    = 0lu;
     double total  = 0.0;
+    auto   hwin   = window * 0.5f;
 
     std::vector<Point> normed;
     normed.reserve(raw.size());
@@ -75,11 +76,10 @@ namespace sc {
         if(init->time > cur->time)
           // vector is not sorted by time
           throw NormalizeException();
-        if(init->time >= cur->time - window)
+        if(init->time >= cur->time - hwin)
           break;
         --cnt;
         total -= (double) init->value;
-
       }
 
       // remove points above the window limit
@@ -88,7 +88,7 @@ namespace sc {
         if(last->time < cur->time)
           // vector is not sorted by time
           throw NormalizeException();
-        if(last->time >= cur->time + window)
+        if(last->time >= cur->time + hwin)
           break;
         ++cnt;
         total += (double) last->value;
