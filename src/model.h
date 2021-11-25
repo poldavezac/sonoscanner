@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 namespace sc {
   enum ZoomState { kAuto, kFixed };

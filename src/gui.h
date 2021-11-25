@@ -1,25 +1,19 @@
+#pragma once
+#include "dataslice.h"
 #include "data.h"
 
+#include <chrono>
+#include <mutex>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QMainWindow>
+#include <QtCharts/QChartGlobal>
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
+#include <QBoxLayout>
+#include <QPushButton>
+#include "gui.h"
+
 namespace sc {
-
-  // all information relative to the current window of data
-  struct DataSlice
-  {
-    size_t begin  = 0lu;
-    size_t end    = 0lu;
-    float  center = 0.f;
-
-    bool operator==(DataSlice const & right) const;
-
-    // update for the next refresh
-    DataSlice refresh(Model const &, Data const &) const;
-
-    // In units of Element::time, the duration between
-    // two refresh calls. This is function of the
-    // data rate and the window and refresh rate.
-    static float centerperiod(Model const & model);
-  };
-
   // all information relative to the GUI configuration
   struct Theme
   {
@@ -30,6 +24,32 @@ namespace sc {
     std::string stoptitle  = "Stop";
     std::string quittitle  = "Quit";
   };
+
+  // Gui data that needs to change during app runtime
+  struct GuiLiveData
+  {
+    Model         model;
+    Data          data;
+    DataSlice     slice = {};
+    std::mutex    mutex = {};
+  };
+
+  // TODO: understand why Qt example is using *naked* pointers
+  struct Gui {
+    QApplication  app;
+    QLineSeries * series;
+    QChart      * chart;
+    QChartView  * view;
+
+    Theme             theme;
+    GuiLiveData       live;
+
+    Gui(int, char **, Model const &, Data const &);
+    void runchartthread();  // in update_chart
+  };
+
+
+  // All
 
   int run(int argc, char **argv, Model & model, Data & data);
 }
