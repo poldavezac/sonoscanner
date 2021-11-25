@@ -1,8 +1,8 @@
 #include <limits>
 #include <assert.h>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 #include "data.h"
-
 
 namespace sc { namespace{
   // private functions for opening 7z files
@@ -19,24 +19,31 @@ namespace sc { namespace{
     };
 
     // opens a txt file and returns data, given a rate and initial time
-    // ignores lines starting with '#'
-    // TODO: add safeguards, strip lines, verify that we are dealing with uint16_t ...
+    // ignores lines starting with '#' and non-numeric lines
+    // forgets values not coded on 16 bits
     std::vector<Point> _open(std::string const &path, float rate, float start = 0.f)
     {
+      assert(sizeof(int) < sizeof(Model::data_t)); // expecting the data to be coded on 16 bits
       std::vector<Point> data;
       std::ifstream infile(path);
-      std::string line;
-      while (std::getline(infile, line))
+      auto period = 1.f / rate;
+      for(std::string line; !infile.eof() && std::getline(infile, line); )
       {
-        if(line.front() == '#')
+        boost::algorithm::trim(line);
+        if(line.size() == 0lu || line.front() == '#')
           continue;
 
-        auto value = std::stoi(line);
-        if(!(value < 0 || value > std::numeric_limits<uint16_t>::max()))
+        auto value = std::numeric_limits<int>::max();
+        try{
+          value = std::stoi(line);
+        } catch(...) {
+          continue; // treating errors as if the user added a comment ...
+        };
+        if(std::abs(value) <= std::numeric_limits<Model::data_t>::max())
           data.push_back(Point{start, float(value)});
 
         // values count whether or not they have the right range.
-        start += rate;
+        start += period;
       }
       return data;
     }
@@ -49,8 +56,8 @@ namespace sc {
   // We expect the data to be sorted by time
   std::vector<Point> normalize(std::vector<Point> const & raw, float window)
   {
-    if(raw.size() == 0lu)
-      return {};
+    if(raw.size() == 0lu || window <= 0.0f)
+      return raw;
 
     auto   init   = raw.begin();
     auto   cur    = raw.begin();
@@ -63,7 +70,7 @@ namespace sc {
     for(auto end = raw.end(); cur != end; ++cur)
     {
       // remove points below the window limit
-      while(init != cur)
+      for(; init != cur; ++init)
       {
         if(init->time > cur->time)
           // vector is not sorted by time
@@ -72,10 +79,11 @@ namespace sc {
           break;
         --cnt;
         total -= (double) init->value;
+
       }
 
       // remove points above the window limit
-      while(last != end)
+      for(; last != end; ++last)
       {
         if(last->time < cur->time)
           // vector is not sorted by time
@@ -105,7 +113,7 @@ namespace sc {
       if(ext7z::_isfile(mdl.path))
         data.raw = std::move(ext7z::_open(mdl.path, mdl.rate));
       else if(exttxt::_isfile(mdl.path))
-        data.raw = std::move(ext7z::_open(mdl.path, mdl.rate));
+        data.raw = std::move(exttxt::_open(mdl.path, mdl.rate));
 
       data.normalize(mdl.slidingrange);
     }

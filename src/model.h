@@ -8,6 +8,8 @@ namespace sc {
   // TODO: separate into multiple structures, depending on functionality (zoom, normalization, ...)
   // TODO: learn and use doxygen-styled comments
   struct Model {
+    using data_t = int16_t;                 // the data size
+
     std::string  path;                      // path to the data
     float        rate         = 500;        // rate of data points (Hz)
 
