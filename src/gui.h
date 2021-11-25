@@ -37,7 +37,7 @@ namespace sc {
 
   // TODO: understand why Qt example is using *naked* pointers
   struct Gui {
-    QApplication  app;
+    QApplication  &app;
     QLineSeries * series;
     QChart      * chart;
     QChartView  * view;
@@ -45,12 +45,11 @@ namespace sc {
     Theme             theme;
     GuiLiveData       live;
 
-    Gui(int, char **, Model const &, Data const &);
+    Gui(QApplication &, Model const &, Data const &);
     void runchartthread();  // in update_chart
   };
 
 
-  // All
-
-  int run(int argc, char **argv, Model & model, Data & data);
+  // start the gui
+  void run(QApplication &, Model &, Data &);
 }

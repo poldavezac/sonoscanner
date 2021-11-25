@@ -1,11 +1,6 @@
 #include <thread>
 #include <chrono>
 #include <mutex>
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QMainWindow>
-#include <QtCharts/QChartGlobal>
-#include <QtCharts/QChartView>
-#include <QtCharts/QLineSeries>
 #include <QBoxLayout>
 #include <QPushButton>
 #include <QLineEdit>
@@ -20,7 +15,9 @@ namespace sc {
     void _set_window(T * view, Theme const & theme)
     {
       QMainWindow window;
-      window.setLayout(view);
+      auto widget = new QWidget();
+      window.setCentralWidget(widget);
+      widget->setLayout(view);
       window.resize(theme.width, theme.height);
       window.show();
     }
@@ -72,8 +69,8 @@ namespace sc {
     }
   }
 
-  Gui::Gui(int argc, char **argv, Model const & mdl, Data const & dat):
-    app(argc, argv),
+  Gui::Gui(QApplication & app, Model const & mdl, Data const & dat):
+    app(app),
     series(new QLineSeries()),
     chart(new QChart()),
     view(new QChartView(this->chart)),
@@ -89,13 +86,17 @@ namespace sc {
     layout->addWidget(this->view);
     layout->addLayout(_add_buttons(*this));
     _set_window(layout, this->theme);
+    this->live.model.state = kStopped;
   }
 
-  int run(int argc, char **argv, Model & model, Data & data)
+  void run(QApplication & app, Model & model, Data & data)
   {
-    Gui gui(argc, argv, model, data);
+    qDebug("Starting GUI");
+    Gui gui(app, model, data);
+    qDebug("Started GUI, starting stream");
 
     std::thread thr([&gui]{ gui.runchartthread(); }); 
-    return gui.app.exec();
+    qDebug("Started stream");
+    app.exec();
   }
 }
