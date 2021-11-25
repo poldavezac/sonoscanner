@@ -23,6 +23,7 @@ namespace sc {
     std::string starttitle = "Start";
     std::string stoptitle  = "Stop";
     std::string quittitle  = "Quit";
+    std::string slidingrangetitle  = "Slinding Window";
   };
 
   // Gui data that needs to change during app runtime

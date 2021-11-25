@@ -8,6 +8,9 @@
 #include <QtCharts/QLineSeries>
 #include <QBoxLayout>
 #include <QPushButton>
+#include <QLineEdit>
+#include <QLabel>
+#include <QRegularExpressionValidator>
 #include "gui.h"
 
 QT_USE_NAMESPACE
@@ -36,11 +39,34 @@ namespace sc {
       return btn;
     }
 
+    QLineEdit * _add_normrange(Gui & gui)
+    {
+      auto value = std::to_string(gui.live.model.slidingrange);
+      auto btn = new QLineEdit(value.data());
+      btn->setValidator(new QRegularExpressionValidator(
+        QRegularExpression("[0-9]*.{0,1}[0-9]*"), btn
+      ));
+      QObject::connect(btn, &QLineEdit::editingFinished, [&gui, &btn](){
+          auto val = gui.live.model.slidingrange;
+
+          auto txt = btn->text().toStdString();
+          try{ val = std::stof(txt); }
+          catch(...) { return; }
+
+          std::lock_guard<std::mutex> _(gui.live.mutex);
+          gui.live.model.slidingrange = val;
+          gui.live.data.normalize(val);
+      });
+      return btn;
+    }
+
     QBoxLayout * _add_buttons(Gui & gui)
     {
       auto layout = new QBoxLayout(QBoxLayout::LeftToRight);
       layout->addWidget(_add_button<kRunning>(gui.theme.starttitle, gui, [](){}));
       layout->addWidget(_add_button<kStopped>(gui.theme.stoptitle,  gui, [](){}));
+      layout->addWidget(new QLabel(gui.theme.slidingrangetitle.data()));
+      layout->addWidget(_add_normrange(gui));
       layout->addWidget(_add_button<kDisabled>(gui.theme.quittitle,  gui, [&gui](){ gui.app.exit(); }));
       return layout;
     }
