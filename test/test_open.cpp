@@ -5,8 +5,8 @@ namespace {
 TEST(Open, txt) {
   // we launch in <root>/build/bin
   // data is in <root>/data
-  Model mdl("../../data/ecg.txt");
-  auto data = open(mdl);
+  sc::Model mdl{std::string("../../data/ecg.txt")};
+  auto data = sc::open(mdl);
 
   EXPECT_EQ(data.raw.size(), data.normed.size());
   EXPECT_EQ(data.raw.size(), 12254lu);
