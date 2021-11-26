@@ -8,6 +8,7 @@ namespace sc {
     {
       auto & slice = gui.live.slice;
       auto next = slice.refresh(gui.live.model, gui.live.data);
+      printf("%lu %lu %f\n", next.begin, next.end, next.center);
       if(next == slice)
         return false;
 
@@ -19,7 +20,7 @@ namespace sc {
       ) {
         // refresh completely
         gui.series->clear();
-        for(auto i = next.begin; i < next.end; ++i)
+        for(auto i = 0lu; i < next.end; ++i)
           gui.series->append(normed[i].time, normed[i].value);
       }
       else
@@ -75,7 +76,7 @@ namespace sc {
     void _update_chart(Gui & gui)
     {
       auto & model = gui.live.model;
-      if(model.state == kRunning && _update_line(gui))
+      if(model.state != kDisabled && _update_line(gui))
       {
         _update_axis<Qt::Horizontal>(gui);
         if(model.zoom == kAuto)
@@ -85,18 +86,24 @@ namespace sc {
     }
   }
 
-  void Gui::runchartthread()
+  void Gui::updatechart()
   {
-    while(this->live.model.state != kDisabled)
-    {
       if(this->live.mutex.try_lock())
       {
         try { _update_chart(*this); }
         catch (...){
-          this->live.mutex.unlock();
           std::throw_with_nested(std::runtime_error("Failed update"));
         }
+        this->live.mutex.unlock();
       }
+  }
+
+  void Gui::runchartthread()
+  {
+    while(this->live.model.state != kDisabled)
+    {
+      if(this->live.model.state == kRunning)
+        this->updatechart();
       std::this_thread::sleep_for(
           std::chrono::milliseconds(
             (int) std::round(1000.f/this->live.model.refreshrate)

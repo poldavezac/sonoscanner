@@ -115,7 +115,7 @@ namespace sc {
       else if(exttxt::_isfile(mdl.path))
         data.raw = std::move(exttxt::_open(mdl.path, mdl.rate));
 
-      data.normalize(mdl.slidingrange);
+      data.normalize(mdl.normalizationrange);
     }
     return data;
   }

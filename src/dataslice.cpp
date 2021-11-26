@@ -22,26 +22,29 @@ namespace sc {
 
   DataSlice DataSlice::refresh(Model const & model, Data const & data) const
   {
-    auto hrng = model.windowrange * .5;
-    DataSlice next = {
+    if(this->end >= data.normed.size())
+      return *this;
+
+    // we have not yet reached the end of the data
+    auto next = DataSlice{
       this->begin, this->end, this->center + DataSlice::centerperiod(model)
     };
+    auto hrng = model.windowrange * .5;
 
-    if(data.normed.back().time > next.center + hrng)
-    {
-      // we have not yet reached the end of the data
-      // move lower end
-      float first = next.center - hrng;
-      for(size_t iend = data.normed.size(); next.begin < iend; ++next.begin)
-        if(data.normed[next.begin].time >= first)
-          break;
+    // move lower end
+    float first = next.center - hrng;
+    for(size_t iend = data.normed.size(); next.begin < iend; ++next.begin)
+      if(data.normed[next.begin].time >= first)
+        break;
 
-      // move upper end
-      float last = next.center + hrng;
-      for(size_t iend = data.normed.size(); next.end < iend; ++next.end)
-        if(data.normed[next.end].time >= last)
-          break;
-    }
+    // move upper end
+    float last = next.center + hrng;
+    for(size_t iend = data.normed.size(); next.end < iend; ++next.end)
+      if(data.normed[next.end].time > last)
+        break;
+
+    if(data.normed[next.end].time <= last) // this happens at the very last refresh
+      ++next.end;
     return next;
   }
 }

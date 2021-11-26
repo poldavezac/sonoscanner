@@ -23,7 +23,7 @@ namespace sc {
     std::string starttitle = "Start";
     std::string stoptitle  = "Stop";
     std::string quittitle  = "Quit";
-    std::string slidingrangetitle  = "Slinding Window";
+    std::string normalizationrangetitle  = "Slinding Window";
   };
 
   // Gui data that needs to change during app runtime
@@ -48,7 +48,8 @@ namespace sc {
     GuiLiveData       live;
 
     Gui(QApplication &, Model const &, Data const &);
-    void runchartthread();  // in update_chart
+    void runchartthread();  // in update_chart.cpp
+    void updatechart();   // in update_chart.cpp
   };
 
 
