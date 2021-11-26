@@ -99,10 +99,11 @@ The window is composed of:
 
 ## Things to improve
 
-1. Currently, zipped data cannot be loaded. The structure of the data in the
-   application can already handle non-periodic time samples, but we are missing
-   the code for unzipping files.
+1. Currently, zipped data cannot be loaded. The data structure is compatible with
+   non-periodic time samples, but we are missing the code for unzipping files.
 2. QML is not used: this is my first time using Qt. I did not explore this functionnality.
 3. The MVC structure is not quite there: I believe Qt has the necessary framework. I did not explore this.
 4. No tests on the GUI itself: I'm sure Qt has means to do so. I did not explore this.
 5. Code documentation: missing for lack of time.
+6. The current chart does not display the fact that data points may be missing.
+   It could be done by displaying broken lines.
