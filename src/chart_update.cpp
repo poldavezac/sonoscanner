@@ -91,9 +91,7 @@ namespace sc {
     {
       if(this->live.mutex.try_lock())
       {
-        try{
-          _update_chart(*this);
-        }
+        try { _update_chart(*this); }
         catch (...){
           this->live.mutex.unlock();
           std::throw_with_nested(std::runtime_error("Failed update"));

@@ -11,17 +11,6 @@
 QT_USE_NAMESPACE
 namespace sc {
   namespace {
-    template<typename T>
-    void _set_window(T * view, Theme const & theme)
-    {
-      QMainWindow window;
-      auto widget = new QWidget();
-      window.setCentralWidget(widget);
-      widget->setLayout(view);
-      window.resize(theme.width, theme.height);
-      window.show();
-    }
-
     template <DisplayState S, typename T>
     QPushButton * _add_button(std::string const & title, Gui & gui, T && other)
     {
@@ -74,6 +63,7 @@ namespace sc {
     series(new QLineSeries()),
     chart(new QChart()),
     view(new QChartView(this->chart)),
+    layout(new QBoxLayout(QBoxLayout::TopToBottom)),
     live{mdl, dat}
   {
     this->chart->legend()->hide();
@@ -82,10 +72,8 @@ namespace sc {
     this->chart->setTitle(this->theme.title.data());
     this->view->setRenderHint(QPainter::Antialiasing);
 
-    auto layout = new QBoxLayout(QBoxLayout::TopToBottom);
     layout->addWidget(this->view);
     layout->addLayout(_add_buttons(*this));
-    _set_window(layout, this->theme);
     this->live.model.state = kStopped;
   }
 
@@ -93,10 +81,19 @@ namespace sc {
   {
     qDebug("Starting GUI");
     Gui gui(app, model, data);
-    qDebug("Started GUI, starting stream");
 
+    qDebug("Creating main window");
+    QMainWindow window;
+    auto widget = new QWidget();
+    window.setCentralWidget(widget);
+    widget->setLayout(gui.layout);
+    window.resize(gui.theme.width, gui.theme.height);
+    window.show();
+
+    qDebug("starting stream");
     std::thread thr([&gui]{ gui.runchartthread(); }); 
-    qDebug("Started stream");
+
+    qDebug("Executing app");
     app.exec();
   }
 }

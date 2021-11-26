@@ -36,11 +36,13 @@ namespace sc {
   };
 
   // TODO: understand why Qt example is using *naked* pointers
+  // I expect that Qt handles their destruction.
   struct Gui {
     QApplication  &app;
     QLineSeries * series;
     QChart      * chart;
     QChartView  * view;
+    QBoxLayout  * layout;
 
     Theme             theme;
     GuiLiveData       live;
