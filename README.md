@@ -67,3 +67,35 @@ conan install ... --build=missing
 cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 cmake --build .
 ```
+
+## Current Application
+
+The application can be started with
+
+```
+cd build/bin
+./viewer
+```
+
+Command-line options are available for selecting the files and setting various preferences.
+
+The window is composed of:
+
+1. A chart with the data
+2. A **start** button to start and restart streaming the data.
+3. A **stop** button to stop streaming the data.
+4. A **Slinding window**  text input which selects the window used for
+   computing the baseline: a value above zero will subtract a baseline from the data. The baseline is a sliding mean.
+5. A **quit** button for quitting the application
+6. A **Automated zoom** button for applying an automated range to the y axis. The latter is based on the data currently displayed.
+7. Two **y-axis min/max** inputs for selecting the y-axis range. Changing these manually stops the automation.
+
+## Things to improve
+
+1. Currently, zipped data cannot be loaded. The structure of the data in the
+   application can already handle non-periodic time samples, but we are missing
+   the code for unzipping files.
+2. QML is not used: this is my first time using Qt. I did not explore this functionnality.
+3. The MVC structure is not quite there: I believe Qt has the necessary framework. I did not explore this.
+4. No tests on the GUI itself: I'm sure Qt has means to do so. I did not explore this.
+5. Code documentation: missing for lack of time.

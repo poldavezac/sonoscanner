@@ -31,6 +31,7 @@ TEST(Open, txt) {
 
 TEST(Open, 7z) {
   // TODO
+  // I lack the time to explore the 7z library
 }
 
 TEST(Data, normalize_0) {
@@ -160,5 +161,11 @@ TEST(DataSlice, refresh)
   EXPECT_EQ(slice.begin, 4lu);
   EXPECT_EQ(slice.end, 8lu);
   EXPECT_EQ(slice.center, 6.f);
+}
+
+TEST(GUI, interactions)
+{
+  // TODO
+  // I lack the knowledge in Qt to do this right now
 }
 }
