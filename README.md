@@ -68,6 +68,13 @@ cmake .. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 cmake --build .
 ```
 
+Tests can be run as follows:
+
+```
+cd <root>/build/bin
+./test_viewer
+```
+
 ## Current Application
 
 The application can be started with
