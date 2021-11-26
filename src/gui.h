@@ -9,6 +9,7 @@
 #include <QtCharts/QChartGlobal>
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
+#include <QLineEdit>
 #include <QBoxLayout>
 #include <QPushButton>
 #include "gui.h"
@@ -43,6 +44,8 @@ namespace sc {
     QChart      * chart;
     QChartView  * view;
     QBoxLayout  * layout;
+    QLineEdit   * ymin;
+    QLineEdit   * ymax;
 
     Theme             theme;
     GuiLiveData       live;

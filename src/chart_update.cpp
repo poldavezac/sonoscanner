@@ -38,28 +38,49 @@ namespace sc {
       return true;
     }
 
-    template <Qt::Orientation> qreal _axis_min(Gui const & gui);
-    template <Qt::Orientation> qreal _axis_max(Gui const & gui);
-    template <> qreal _axis_min<Qt::Horizontal>(Gui const & gui)
+    template <Qt::Orientation, bool Z> qreal _axis_min(Gui const & gui);
+    template <Qt::Orientation, bool Z> qreal _axis_max(Gui const & gui);
+    template <> qreal _axis_min<Qt::Horizontal, true>(Gui const & gui)
     { return gui.series->points().front().rx(); }
-    template <> qreal _axis_max<Qt::Horizontal>(Gui const & gui)
+    template <> qreal _axis_max<Qt::Horizontal, true>(Gui const & gui)
     { return gui.series->points().back().rx(); }
-    template <> qreal _axis_min<Qt::Vertical>(Gui const & gui)
+    template <> qreal _axis_min<Qt::Vertical, true>(Gui const & gui)
     {
       auto val = std::numeric_limits<qreal>::max();
       for(auto pt: gui.series->points())
         val = std::min(val, pt.ry());
       return val;
     }
-    template <> qreal _axis_max<Qt::Vertical>(Gui const & gui)
+    template <> qreal _axis_max<Qt::Vertical, true>(Gui const & gui)
     {
       auto val = std::numeric_limits<qreal>::min();
       for(auto pt: gui.series->points())
         val = std::max(val, pt.ry());
       return val;
     }
+    template <> qreal _axis_min<Qt::Vertical, false>(Gui const & gui)
+    {
+      auto txt = gui.ymin->text().toStdString();
+      try { return std::stof(txt); } catch(...) {}
+      return _axis_min<Qt::Vertical, false>(gui);
+    }
+    template <> qreal _axis_max<Qt::Vertical, false>(Gui const & gui)
+    {
+      auto txt = gui.ymax->text().toStdString();
+      try { return std::stof(txt); } catch(...) {}
+      return _axis_max<Qt::Vertical, false>(gui);
+    }
 
-    template <Qt::Orientation O>
+    inline void _axis_range(Gui const & gui, qreal &front, qreal &back)
+    {
+      if(gui.series->points().size() == 0lu)
+        return;
+      auto rng = (back-front) * gui.live.model.axispadding;
+      front -= rng;
+      back  += rng;
+    }
+
+    template <Qt::Orientation O, bool Z = true>
     inline void _update_axis(Gui const & gui)
     {
       // expecting only one axis
@@ -70,10 +91,30 @@ namespace sc {
         axis->setMin(0.f);
         axis->setMax(1.f);
       } else {
-        auto front = _axis_min<O>(gui);
-        auto back  = _axis_max<O>(gui);
-        axis->setMin(front - (back-front) * gui.live.model.axispadding);
-        axis->setMax(back  + (back-front) * gui.live.model.axispadding);
+        auto front = _axis_min<O, Z>(gui);
+        auto back  = _axis_max<O, Z>(gui);
+        if(Z)
+          // Z = false is for fixed range: don't adapt it
+          _axis_range(gui, front, back);
+        axis->setMin(front);
+        axis->setMax(back);
+      }
+    }
+
+    void _update_yaxis_lineedit(Gui & gui)
+    {
+      auto front = _axis_min<Qt::Vertical, true>(gui);
+      auto back  = _axis_max<Qt::Vertical, true>(gui);
+      _axis_range(gui, front, back);
+      if(!gui.ymin->hasFocus())
+      {
+        auto value = std::to_string(front);
+        gui.ymin->setText(value.data());
+      }
+      if(!gui.ymin->hasFocus())
+      {
+        auto value = std::to_string(back);
+        gui.ymax->setText(value.data());
       }
     }
 
@@ -82,11 +123,16 @@ namespace sc {
       auto & model = gui.live.model;
       if(model.state != kDisabled && _update_line(gui, donext))
       {
-        _update_axis<Qt::Horizontal>(gui);
+        _update_axis<Qt::Horizontal, true>(gui);
         if(model.zoom == kAuto)
-          _update_axis<Qt::Vertical>(gui);
+          _update_axis<Qt::Vertical, true>(gui);
+        else
+          _update_axis<Qt::Vertical, false>(gui);
         gui.chart->update();
       }
+
+      if((model.state == kRefresh || model.state == kRunning) && model.zoom == kAuto)
+        _update_yaxis_lineedit(gui);
     }
 
     bool _doupdate(Gui & gui, bool donext)

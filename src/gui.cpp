@@ -3,7 +3,6 @@
 #include <mutex>
 #include <QBoxLayout>
 #include <QPushButton>
-#include <QLineEdit>
 #include <QLabel>
 #include <QRegularExpressionValidator>
 #include "gui.h"
@@ -23,32 +22,38 @@ namespace sc {
       return btn;
     }
 
-    QLineEdit * _add_normrange(Gui & gui)
+    template<typename T>
+    QLineEdit * _add_lineedit(Gui & gui, T && func)
     {
       auto value = std::to_string(gui.live.model.normalizationrange);
       auto btn = new QLineEdit(value.data());
       btn->setValidator(new QRegularExpressionValidator(
         QRegularExpression("[0-9]*.{0,1},{0,1}[0-9]*"), btn
       ));
-      QObject::connect(btn, &QLineEdit::editingFinished, [&gui, btn](){
-          auto val = gui.live.model.normalizationrange;
+      QObject::connect(btn, &QLineEdit::editingFinished, [&gui, btn, func](){
+          auto val = 0.f;
 
           auto txt = btn->text().toStdString();
           try{ val = std::stof(txt); }
           catch(...) {
             qDebug("Failed to parse value: '%s'", txt.data());
-            auto value = std::to_string(gui.live.model.normalizationrange);
-            btn->setText(value.data());
             return; 
           }
-
           std::lock_guard<std::mutex> _(gui.live.mutex);
-          gui.live.model.normalizationrange = std::max(0.f, val);
+          func(val);
+      });
+      return btn;
+    }
+
+    QLineEdit * _add_normrange(Gui & gui)
+    {
+      return _add_lineedit(gui, [&gui](float val) {
+          val = std::max(0.f, val);
           qDebug("Changing normalization range to %f", val);
+          gui.live.model.normalizationrange = val;
           gui.live.data.normalize(val);
           gui.live.model.state = kRefresh;
       });
-      return btn;
     }
 
     QBoxLayout * _add_buttons(Gui & gui)
@@ -63,6 +68,31 @@ namespace sc {
       layout->addWidget(_add_button<kDisabled>(
         gui.theme.quittitle,  gui, [&gui](){ gui.app.exit(); }
       ));
+      return layout;
+    }
+
+    QBoxLayout * _add_yaxisedit(Gui & gui)
+    {
+      auto layout = new QBoxLayout(QBoxLayout::LeftToRight);
+      auto btn = new QPushButton("Automatic Y Range");
+      QObject::connect(btn, &QPushButton::clicked, [&gui](){
+          std::lock_guard<std::mutex> _(gui.live.mutex);
+          gui.live.model.zoom = gui.live.model.zoom == kAuto ? kFixed : kAuto;
+      });
+      gui.ymin = _add_lineedit(gui, [&gui](float val) {
+          qDebug("Parsed value ymin: '%f'", val);
+          gui.live.model.zoom = kFixed;
+          gui.live.model.state = kRefresh;
+      });
+      gui.ymax = _add_lineedit(gui, [&gui](float val) {
+          qDebug("Parsed value ymax: '%f'", val);
+          gui.live.model.zoom = kFixed;
+          gui.live.model.state = kRefresh;
+      });
+      layout->addWidget(btn);
+      layout->addWidget(new QLabel("Y min / max"));
+      layout->addWidget(gui.ymin);
+      layout->addWidget(gui.ymax);
       return layout;
     }
   }
@@ -83,6 +113,7 @@ namespace sc {
 
     layout->addWidget(this->view);
     layout->addLayout(_add_buttons(*this));
+    layout->addLayout(_add_yaxisedit(*this));
     this->live.model.state = kStopped;
   }
 
