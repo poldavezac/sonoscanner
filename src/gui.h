@@ -49,7 +49,6 @@ namespace sc {
 
     Gui(QApplication &, Model const &, Data const &);
     void runchartthread();  // in update_chart.cpp
-    void updatechart();   // in update_chart.cpp
   };
 
 

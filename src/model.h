@@ -2,7 +2,7 @@
 #include <string>
 namespace sc {
   enum ZoomState { kAuto, kFixed };
-  enum DisplayState { kRunning, kDisabled, kStopped };
+  enum DisplayState { kRefresh, kRunning, kDisabled, kStopped };
 
   // Structure for holding all configrations
   // TODO: separate into multiple structures, depending on functionality (zoom, normalization, ...)

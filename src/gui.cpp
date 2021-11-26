@@ -28,20 +28,25 @@ namespace sc {
       auto value = std::to_string(gui.live.model.normalizationrange);
       auto btn = new QLineEdit(value.data());
       btn->setValidator(new QRegularExpressionValidator(
-        QRegularExpression("[0-9]*.{0,1}[0-9]*"), btn
+        QRegularExpression("[0-9]*.{0,1},{0,1}[0-9]*"), btn
       ));
-      QObject::connect(btn, &QLineEdit::editingFinished, [&gui, &btn](){
-          qDebug("Changing normalization range ?");
+      QObject::connect(btn, &QLineEdit::editingFinished, [&gui, btn](){
           auto val = gui.live.model.normalizationrange;
 
           auto txt = btn->text().toStdString();
           try{ val = std::stof(txt); }
-          catch(...) { return; }
+          catch(...) {
+            qDebug("Failed to parse value: '%s'", txt.data());
+            auto value = std::to_string(gui.live.model.normalizationrange);
+            btn->setText(value.data());
+            return; 
+          }
 
           std::lock_guard<std::mutex> _(gui.live.mutex);
           gui.live.model.normalizationrange = std::max(0.f, val);
           qDebug("Changing normalization range to %f", val);
           gui.live.data.normalize(val);
+          gui.live.model.state = kRefresh;
       });
       return btn;
     }
@@ -94,7 +99,7 @@ namespace sc {
     window.resize(gui.theme.width, gui.theme.height);
     window.show();
 
-    gui.updatechart();
+    gui.live.model.state = kRefresh;
 
     qDebug("starting stream");
     std::thread thr([&gui]{ gui.runchartthread(); }); 

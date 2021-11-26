@@ -4,23 +4,27 @@
 namespace sc {
   // gui interactions
   namespace {
-    bool _update_line(Gui & gui)
+    bool _update_line(Gui & gui, bool donext)
     {
       auto & slice = gui.live.slice;
-      auto next = slice.refresh(gui.live.model, gui.live.data);
-      printf("%lu %lu %f\n", next.begin, next.end, next.center);
-      if(next == slice)
+      if(slice.begin == slice.end)
+        donext = true; // happens when starting from 0
+
+      auto next = donext ? slice.refresh(gui.live.model, gui.live.data) : slice;
+      if(next == slice && gui.series->points().size() > 0lu)
         return false;
 
       auto & normed = gui.live.data.normed;
       if(
-          (slice.begin == slice.end)
+          gui.series->points().size() == 0lu
+          || (slice.begin == slice.end)
           || (slice.begin > next.begin)
           || (slice.end > next.end)
       ) {
         // refresh completely
         gui.series->clear();
-        for(auto i = 0lu; i < next.end; ++i)
+        qDebug("Displaying from %lu to %lu", 0lu, next.end);
+        for(auto i = next.begin; i < next.end; ++i)
           gui.series->append(normed[i].time, normed[i].value);
       }
       else
@@ -73,10 +77,10 @@ namespace sc {
       }
     }
 
-    void _update_chart(Gui & gui)
+    void _update_chart(Gui & gui, bool donext)
     {
       auto & model = gui.live.model;
-      if(model.state != kDisabled && _update_line(gui))
+      if(model.state != kDisabled && _update_line(gui, donext))
       {
         _update_axis<Qt::Horizontal>(gui);
         if(model.zoom == kAuto)
@@ -84,26 +88,35 @@ namespace sc {
         gui.chart->update();
       }
     }
-  }
 
-  void Gui::updatechart()
-  {
-      if(this->live.mutex.try_lock())
-      {
-        try { _update_chart(*this); }
-        catch (...){
-          std::throw_with_nested(std::runtime_error("Failed update"));
+    bool _doupdate(Gui & gui, bool donext)
+    {
+        if(gui.live.mutex.try_lock())
+        {
+          try { _update_chart(gui, donext); }
+          catch (...){
+            std::throw_with_nested(std::runtime_error("Failed update"));
+          }
+          gui.live.mutex.unlock();
+          return true;
         }
-        this->live.mutex.unlock();
-      }
+        return false;
+    }
   }
 
   void Gui::runchartthread()
   {
     while(this->live.model.state != kDisabled)
     {
+      if(this->live.model.state == kRefresh)
+      {
+        // TODO: setup a Qt signal to trigger this automatically
+        this->series->clear();
+        if(_doupdate(*this, false))
+          this->live.model.state = kStopped;
+      }
       if(this->live.model.state == kRunning)
-        this->updatechart();
+        _doupdate(*this, true);
       std::this_thread::sleep_for(
           std::chrono::milliseconds(
             (int) std::round(1000.f/this->live.model.refreshrate)
